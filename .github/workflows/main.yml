@@ -90,6 +90,32 @@ jobs:
       working-directory: test-crate
       if: ${{ !matrix.platform.test }}
 
+  windows_test:
+    name: Test Windows - ${{ matrix.platform.target }}
+    needs: [ test ]
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - target: i686-pc-windows-msvc
+            os: windows-latest
+          - target: aarch64-pc-windows-msvc
+            os: windows-11-arm
+          - target: arm64ec-pc-windows-msvc
+            os: windows-11-arm
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install Rust
+      run: |
+        rustup update stable --no-self-update
+        rustup default stable
+        rustup target add ${{ matrix.platform.target }}
+    - uses: Swatinem/rust-cache@v2
+    - run: cargo test --target ${{ matrix.platform.target }}
+    - name: Integration test
+      run: cargo test --target ${{ matrix.platform.target }} --manifest-path test-crate/Cargo.toml
+
   ios_cross_compile_test:
     name: Test Cross Compile - ${{ matrix.platform.target }}
     needs: [ test ]
@@ -161,6 +187,7 @@ jobs:
       - clippy
       - test
       - cross_compile_test
+      - windows_test
       - ios_cross_compile_test
       - rustfmt
       - doc
